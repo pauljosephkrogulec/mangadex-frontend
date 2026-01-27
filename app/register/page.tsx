@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
-export default function Login() {
+export default function Register() {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -16,30 +19,46 @@ export default function Login() {
         setLoading(true);
         setError('');
 
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/login`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/users`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/ld+json',
+                    'Accept': 'application/ld+json',
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ 
+                    username, 
+                    email, 
+                    password,
+                    roles: ['ROLE_USER']
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data.error || 'Login failed');
+                // Handle validation errors
+                if (data.violations) {
+                    const violationMessages = data.violations.map((v: { message: string }) => v.message).join(', ');
+                    setError(violationMessages);
+                } else {
+                    setError(data.error || data['hydra:description'] || 'Registration failed');
+                }
                 return;
             }
 
-            // Store JWT token
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            // Redirect or handle successful login
-            window.location.href = '/';
+            // Registration successful, redirect to login
+            window.location.href = '/login?registered=true';
 
-        } catch (err) {
-            setError('Network error');
+        } catch {
+            setError('Network error. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -61,22 +80,22 @@ export default function Login() {
 
                         {/* Right side actions */}
                         <div className="flex items-center space-x-4">
-                            <Link href="/register" className="bg-orange-500  px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">
-                                Sign Up
+                            <Link href="/login" className="text-gray-300 hover:text-orange-400 transition-colors">
+                                Sign In
                             </Link>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Login Form Section */}
+            {/* Register Form Section */}
             <section className="py-16">
                 <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="bg-gray-800 rounded-lg shadow-lg p-8">
                         {/* Header */}
                         <div className="text-center mb-8">
-                            <h1 className="text-3xl font-bold  mb-2">Welcome Back</h1>
-                            <p className="">Sign in to your MangaDex account</p>
+                            <h1 className="text-3xl font-bold  mb-2">Create Account</h1>
+                            <p className="">Join the MangaDex community</p>
                         </div>
 
                         {/* Error Message */}
@@ -86,8 +105,29 @@ export default function Login() {
                             </div>
                         )}
 
-                        {/* Login Form */}
+                        {/* Register Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Username Field */}
+                            <div>
+                                <label htmlFor="username" className=" block text-sm font-medium  mb-2">
+                                    Username
+                                </label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 " />
+                                    <input
+                                        type="text"
+                                        id="username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        required
+                                        minLength={1}
+                                        maxLength={64}
+                                        className="w-full pl-10 pr-4 py-3 border  border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        placeholder="Choose a username"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Email Field */}
                             <div>
                                 <label htmlFor="email" className=" block text-sm font-medium  mb-2">
@@ -101,6 +141,7 @@ export default function Login() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
+                                        maxLength={255}
                                         className="w-full pl-10 pr-4 py-3 border  border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                                         placeholder="Enter your email"
                                     />
@@ -120,8 +161,10 @@ export default function Login() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
+                                        minLength={8}
+                                        maxLength={1024}
                                         className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                        placeholder="Enter your password"
+                                        placeholder="Create a password"
                                     />
                                     <button
                                         type="button"
@@ -133,21 +176,52 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            {/* Remember Me & Forgot Password */}
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
+                            {/* Confirm Password Field */}
+                            <div>
+                                <label htmlFor="confirmPassword" className="block text-sm font-medium  mb-2">
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 " />
                                     <input
-                                        id="remember"
-                                        type="checkbox"
-                                        className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        id="confirmPassword"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
+                                        minLength={8}
+                                        maxLength={1024}
+                                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        placeholder="Confirm your password"
                                     />
-                                    <label htmlFor="remember" className="ml-2 block text-sm ">
-                                        Remember me
-                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2  hover:text-gray-600"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
                                 </div>
-                                <Link href="/forgot-password" className="text-sm text-orange-500 hover:text-orange-600">
-                                    Forgot password?
-                                </Link>
+                            </div>
+
+                            {/* Terms and Conditions */}
+                            <div className="flex items-center">
+                                <input
+                                    id="terms"
+                                    type="checkbox"
+                                    required
+                                    className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                                />
+                                <label htmlFor="terms" className="ml-2 block text-sm ">
+                                    I agree to the{' '}
+                                    <Link href="/terms" className="text-orange-500 hover:text-orange-600">
+                                        Terms of Service
+                                    </Link>{' '}
+                                    and{' '}
+                                    <Link href="/privacy" className="text-orange-500 hover:text-orange-600">
+                                        Privacy Policy
+                                    </Link>
+                                </label>
                             </div>
 
                             {/* Submit Button */}
@@ -156,36 +230,16 @@ export default function Login() {
                                 disabled={loading}
                                 className="w-full bg-orange-500  py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? 'Signing in...' : 'Sign In'}
+                                {loading ? 'Creating Account...' : 'Sign Up'}
                             </button>
                         </form>
 
-                        {/* Divider */}
-                        <div className="relative my-8">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300"></div>
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-gray-800">Or continue with</span>
-                            </div>
-                        </div>
-
-                        {/* Social Login Options
-                        <div className="space-y-3">
-                            <button className="w-full border border-gray-300  py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors">
-                                Sign in with Google
-                            </button>
-                            <button className="w-full border border-gray-300  py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors">
-                                Sign in with Discord
-                            </button>
-                        </div>*/}
-
-                        {/* Sign Up Link */}
+                        {/* Sign In Link */}
                         <div className="text-center mt-8">
                             <p className="text-white">
-                                Don't have an account?{' '}
-                                <Link href="/register" className="text-orange-500 hover:text-orange-600 font-medium">
-                                    Sign up now
+                                Already have an account?{' '}
+                                <Link href="/login" className="text-orange-500 hover:text-orange-600 font-medium">
+                                    Sign in here
                                 </Link>
                             </p>
                         </div>

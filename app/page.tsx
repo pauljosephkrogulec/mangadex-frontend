@@ -1,8 +1,78 @@
 
+'use client';
+
 import Link from 'next/link';
-import { Search, BookOpen, Users, Star, ArrowRight, Menu, User, Settings, LogOut } from 'lucide-react';
+import { Search, BookOpen, Star, ArrowRight, Menu } from 'lucide-react';
+import UserAuth from './components/UserAuth';
+import { useState, useEffect } from 'react';
+
+interface Manga {
+  id: string;
+  title: { [key: string]: string };
+  description: { [key: string]: string };
+  status: string;
+  year?: number;
+  contentRating: string;
+  createdAt: string;
+  updatedAt: string;
+  coverArts?: CoverArt[];
+  lastChapter?: string;
+}
+
+interface CoverArt {
+  id: string;
+  fileName: string;
+  manga: string;
+  volume?: string;
+}
 
 export default function Home() {
+  const [featuredManga, setFeaturedManga] = useState<Manga[]>([]);
+  const [latestManga, setLatestManga] = useState<Manga[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMangaData = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas?state=published&itemsPerPage=20&order[updatedAt]=desc`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const mangaList = data['member'] || [];
+          
+          // Add placeholder cover art URLs to manga
+          const mangaWithCoverArts = mangaList.map((manga: any) => {
+            const mangaWithCovers = { ...manga } as Manga;
+            if (manga.coverArts && manga.coverArts.length > 0) {
+              // Use placeholder image with manga ID as seed
+              console.log(manga.coverArts);
+              mangaWithCovers.coverArts = [{
+                id: manga.coverArts[0],
+                fileName: 'https://mangadex.org/covers/' + manga.coverArts[0].fileName,
+                manga: manga.id
+              }];
+            }
+            return mangaWithCovers;
+          });
+          
+          // Set first 6 as featured, next 8 as latest updates
+          setFeaturedManga(mangaWithCoverArts.slice(0, 6));
+          setLatestManga(mangaWithCoverArts.slice(0, 8));
+        }
+      } catch (error) {
+        console.error('Failed to fetch manga data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMangaData();
+  }, []);
+
+  const getDisplayTitle = (title: { [key: string]: string }) => {
+    return title['en'] || title['ja'] || Object.values(title)[0] || 'Untitled';
+  };
+
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Navigation Header */}
@@ -41,12 +111,7 @@ export default function Home() {
               </div>
 
               {/* User menu */}
-              <div className="flex items-center space-x-2">
-                <Link href="/login" className="text-gray-300 hover:text-orange-400 transition-colors">Login</Link>
-                <Link href="/register" className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">
-                  Sign Up
-                </Link>
-              </div>
+              <UserAuth />
 
               {/* Mobile menu button */}
               <button className="md:hidden p-2 rounded-lg hover:bg-gray-700">
@@ -96,22 +161,60 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="group cursor-pointer">
-                <div className="relative overflow-hidden rounded-lg mb-3">
-                  <div className="aspect-[3/4] bg-gradient-to-br from-gray-600 to-gray-700 group-hover:from-gray-500 group-hover:to-gray-600 transition-all"></div>
-                  <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                    HOT
-                  </div>
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] bg-gray-700 rounded-lg mb-3"></div>
+                  <div className="h-4 bg-gray-700 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-600 rounded"></div>
                 </div>
-                <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-2">
-                  Featured Title {i}
-                </h3>
-                <p className="text-sm text-gray-400">Chapter {120 + i}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {featuredManga.length > 0 ? (
+                featuredManga.map((manga) => (
+                  <Link key={manga.id} href={`/manga/${manga.id}`} className="group cursor-pointer">
+                    <div className="relative overflow-hidden rounded-lg mb-3">
+                      <div className="aspect-[3/4] bg-gradient-to-br from-gray-600 to-gray-700 group-hover:from-gray-500 group-hover:to-gray-600 transition-all">
+                        {manga.coverArts && manga.coverArts.length > 0 ? (
+                          <img 
+                            src={manga.coverArts[0].fileName} 
+                            alt={getDisplayTitle(manga.title)}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : 
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="h-12 w-12 text-gray-400" />
+                        </div>}
+                      </div>
+                      {manga.contentRating === 'safe' && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                          SAFE
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {getDisplayTitle(manga.title)}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {manga.status === 'ongoing' ? 'Ongoing' : manga.status === 'completed' ? 'Completed' : manga.status}
+                      {manga.year && ` • ${manga.year}`}
+                    </p>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-400">No manga available</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -125,26 +228,68 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="border border-gray-700 bg-gray-700 rounded-lg p-4 hover:border-orange-400 transition-colors">
-                <div className="flex space-x-4">
-                  <div className="w-16 h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded flex-shrink-0"></div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-white hover:text-orange-400 transition-colors line-clamp-1">
-                      Manga Title {i}
-                    </h3>
-                    <p className="text-sm text-gray-400">Chapter {50 + i}</p>
-                    <p className="text-xs text-gray-500 mt-1">Scan Group {i}</p>
-                    <div className="flex items-center mt-2 text-xs text-gray-500">
-                      <Star className="h-3 w-3 mr-1" />
-                      4.{8 - (i % 3)}
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="border border-gray-700 bg-gray-700 rounded-lg p-4 animate-pulse">
+                  <div className="flex space-x-4">
+                    <div className="w-16 h-20 bg-gray-600 rounded flex-shrink-0"></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="h-4 bg-gray-600 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-500 rounded mb-1"></div>
+                      <div className="h-3 bg-gray-500 rounded"></div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {latestManga.length > 0 ? (
+                latestManga.map((manga) => (
+                  <Link key={manga.id} href={`/manga/${manga.id}`} className="border border-gray-700 bg-gray-700 rounded-lg p-4 hover:border-orange-400 transition-colors block">
+                    <div className="flex space-x-4">
+                      <div className="w-16 h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded flex-shrink-0 overflow-hidden">
+                        {manga.coverArts && manga.coverArts.length > 0 ? (
+                          <img 
+                            src={manga.coverArts[0].fileName} 
+                            alt={getDisplayTitle(manga.title)}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-gray-400" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-white hover:text-orange-400 transition-colors overflow-hidden whitespace-nowrap text-ellipsis">
+                          {getDisplayTitle(manga.title)}
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                          {manga.status === 'ongoing' ? 'Ongoing' : manga.status === 'completed' ? 'Completed' : manga.status}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {manga.contentRating.toUpperCase()}
+                        </p>
+                        <div className="flex items-center mt-2 text-xs text-gray-500">
+                          <Star className="h-3 w-3 mr-1" />
+                          {new Date(manga.updatedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-400">No updates available</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
