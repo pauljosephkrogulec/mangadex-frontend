@@ -30,7 +30,7 @@ export default function UserAuth() {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       const menuElement = document.getElementById('user-menu');
-      
+
       if (isMenuOpen && menuElement && !menuElement.contains(target)) {
         setIsMenuOpen(false);
       }
@@ -45,7 +45,7 @@ export default function UserAuth() {
   const handleLogout = async (e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-    
+
     try {
       // Call backend logout endpoint
       const token = localStorage.getItem('token');
@@ -54,28 +54,32 @@ export default function UserAuth() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
       }
     } catch {
       // Continue with local cleanup even if API call fails
     }
-    
+
     // Clear all auth-related items
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    
+
     // Also clear any other potential auth items
     const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.toLowerCase().includes('token') || key.toLowerCase().includes('user') || key.toLowerCase().includes('auth')) {
+    keys.forEach((key) => {
+      if (
+        key.toLowerCase().includes('token') ||
+        key.toLowerCase().includes('user') ||
+        key.toLowerCase().includes('auth')
+      ) {
         localStorage.removeItem(key);
       }
     });
-    
+
     setUser(null);
-    
+
     // Force a hard redirect to clear any cached state
     window.location.replace('/');
   };
@@ -85,20 +89,27 @@ export default function UserAuth() {
       {user ? (
         <div className="flex items-center space-x-2">
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="flex items-center space-x-2 text-gray-300 hover:text-orange-400 transition-colors"
             >
               <User className="h-5 w-5" />
               <span className="hidden md:block">{user.name}</span>
             </button>
-            
+
             {isMenuOpen && (
-              <div id="user-menu" className="absolute right-0 mt-2 w-48 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+              <div
+                id="user-menu"
+                className="absolute right-0 mt-2 w-48 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50"
+              >
                 <div className="py-1">
                   <div className="px-4 py-2 border-b border-gray-600">
-                    <p className="text-sm font-medium text-white">{user.name}</p>
-                    {user.email && <p className="text-xs text-gray-400">{user.email}</p>}
+                    <p className="text-sm font-medium text-white">
+                      {user.name}
+                    </p>
+                    {user.email && (
+                      <p className="text-xs text-gray-400">{user.email}</p>
+                    )}
                   </div>
                   <button
                     onClick={(e) => {
@@ -143,8 +154,16 @@ export default function UserAuth() {
         </div>
       ) : (
         <>
-          <Link href="/login" className="text-gray-300 hover:text-orange-400 transition-colors">Login</Link>
-          <Link href="/register" className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">
+          <Link
+            href="/login"
+            className="text-gray-300 hover:text-orange-400 transition-colors"
+          >
+            Login
+          </Link>
+          <Link
+            href="/register"
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+          >
             Sign Up
           </Link>
         </>

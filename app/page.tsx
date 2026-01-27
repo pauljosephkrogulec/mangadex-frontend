@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -34,27 +33,33 @@ export default function Home() {
   useEffect(() => {
     const fetchMangaData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas?state=published&itemsPerPage=20&order[updatedAt]=desc`);
-        
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas?state=published&itemsPerPage=20&order[updatedAt]=desc`
+        );
+
         if (response.ok) {
           const data = await response.json();
           const mangaList = data['member'] || [];
-          
+
           // Add placeholder cover art URLs to manga
           const mangaWithCoverArts = mangaList.map((manga: any) => {
             const mangaWithCovers = { ...manga } as Manga;
             if (manga.coverArts && manga.coverArts.length > 0) {
               // Use placeholder image with manga ID as seed
               console.log(manga.coverArts);
-              mangaWithCovers.coverArts = [{
-                id: manga.coverArts[0],
-                fileName: 'https://mangadex.org/covers/' + manga.coverArts[0].fileName,
-                manga: manga.id
-              }];
+              mangaWithCovers.coverArts = [
+                {
+                  id: manga.coverArts[0],
+                  fileName:
+                    'https://mangadex.org/covers/' +
+                    manga.coverArts[0].fileName,
+                  manga: manga.id,
+                },
+              ];
             }
             return mangaWithCovers;
           });
-          
+
           // Set first 6 as featured, next 8 as latest updates
           setFeaturedManga(mangaWithCoverArts.slice(0, 6));
           setLatestManga(mangaWithCoverArts.slice(0, 8));
@@ -89,11 +94,36 @@ export default function Home() {
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/titles" className="text-gray-300 hover:text-orange-400 transition-colors">Titles</Link>
-              <Link href="/updates" className="text-gray-300 hover:text-orange-400 transition-colors">Updates</Link>
-              <Link href="/groups" className="text-gray-300 hover:text-orange-400 transition-colors">Groups</Link>
-              <Link href="/lists" className="text-gray-300 hover:text-orange-400 transition-colors">Lists</Link>
-              <Link href="/forums" className="text-gray-300 hover:text-orange-400 transition-colors">Forums</Link>
+              <Link
+                href="/titles"
+                className="text-gray-300 hover:text-orange-400 transition-colors"
+              >
+                Titles
+              </Link>
+              <Link
+                href="/updates"
+                className="text-gray-300 hover:text-orange-400 transition-colors"
+              >
+                Updates
+              </Link>
+              <Link
+                href="/groups"
+                className="text-gray-300 hover:text-orange-400 transition-colors"
+              >
+                Groups
+              </Link>
+              <Link
+                href="/lists"
+                className="text-gray-300 hover:text-orange-400 transition-colors"
+              >
+                Lists
+              </Link>
+              <Link
+                href="/forums"
+                className="text-gray-300 hover:text-orange-400 transition-colors"
+              >
+                Forums
+              </Link>
             </nav>
 
             {/* Right side actions */}
@@ -156,7 +186,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-white">Featured Manga</h2>
-            <Link href="/titles" className="text-orange-400 hover:text-orange-300 font-medium">
+            <Link
+              href="/titles"
+              className="text-orange-400 hover:text-orange-300 font-medium"
+            >
               View All →
             </Link>
           </div>
@@ -175,23 +208,30 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {featuredManga.length > 0 ? (
                 featuredManga.map((manga) => (
-                  <Link key={manga.id} href={`/manga/${manga.id}`} className="group cursor-pointer">
+                  <Link
+                    key={manga.id}
+                    href={`/manga/${manga.id}`}
+                    className="group cursor-pointer"
+                  >
                     <div className="relative overflow-hidden rounded-lg mb-3">
                       <div className="aspect-[3/4] bg-gradient-to-br from-gray-600 to-gray-700 group-hover:from-gray-500 group-hover:to-gray-600 transition-all">
                         {manga.coverArts && manga.coverArts.length > 0 ? (
-                          <img 
-                            src={manga.coverArts[0].fileName} 
+                          <img
+                            src={manga.coverArts[0].fileName}
                             alt={getDisplayTitle(manga.title)}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              e.currentTarget.nextElementSibling?.classList.remove(
+                                'hidden'
+                              );
                             }}
                           />
-                        ) : 
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="h-12 w-12 text-gray-400" />
-                        </div>}
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen className="h-12 w-12 text-gray-400" />
+                          </div>
+                        )}
                       </div>
                       {manga.contentRating === 'safe' && (
                         <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
@@ -199,11 +239,22 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    <h3
+                      className="font-medium text-white group-hover:text-orange-400 transition-colors overflow-hidden"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
                       {getDisplayTitle(manga.title)}
                     </h3>
                     <p className="text-sm text-gray-400">
-                      {manga.status === 'ongoing' ? 'Ongoing' : manga.status === 'completed' ? 'Completed' : manga.status}
+                      {manga.status === 'ongoing'
+                        ? 'Ongoing'
+                        : manga.status === 'completed'
+                          ? 'Completed'
+                          : manga.status}
                       {manga.year && ` • ${manga.year}`}
                     </p>
                   </Link>
@@ -223,7 +274,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-white">Latest Updates</h2>
-            <Link href="/updates" className="text-orange-400 hover:text-orange-300 font-medium">
+            <Link
+              href="/updates"
+              className="text-orange-400 hover:text-orange-300 font-medium"
+            >
               View All →
             </Link>
           </div>
@@ -231,7 +285,10 @@ export default function Home() {
           {loading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="border border-gray-700 bg-gray-700 rounded-lg p-4 animate-pulse">
+                <div
+                  key={i}
+                  className="border border-gray-700 bg-gray-700 rounded-lg p-4 animate-pulse"
+                >
                   <div className="flex space-x-4">
                     <div className="w-16 h-20 bg-gray-600 rounded flex-shrink-0"></div>
                     <div className="flex-1 min-w-0">
@@ -247,17 +304,23 @@ export default function Home() {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {latestManga.length > 0 ? (
                 latestManga.map((manga) => (
-                  <Link key={manga.id} href={`/manga/${manga.id}`} className="border border-gray-700 bg-gray-700 rounded-lg p-4 hover:border-orange-400 transition-colors block">
+                  <Link
+                    key={manga.id}
+                    href={`/manga/${manga.id}`}
+                    className="border border-gray-700 bg-gray-700 rounded-lg p-4 hover:border-orange-400 transition-colors block"
+                  >
                     <div className="flex space-x-4">
                       <div className="w-16 h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded flex-shrink-0 overflow-hidden">
                         {manga.coverArts && manga.coverArts.length > 0 ? (
-                          <img 
-                            src={manga.coverArts[0].fileName} 
+                          <img
+                            src={manga.coverArts[0].fileName}
                             alt={getDisplayTitle(manga.title)}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              e.currentTarget.nextElementSibling?.classList.remove(
+                                'hidden'
+                              );
                             }}
                           />
                         ) : null}
@@ -270,7 +333,11 @@ export default function Home() {
                           {getDisplayTitle(manga.title)}
                         </h3>
                         <p className="text-sm text-gray-400">
-                          {manga.status === 'ongoing' ? 'Ongoing' : manga.status === 'completed' ? 'Completed' : manga.status}
+                          {manga.status === 'ongoing'
+                            ? 'Ongoing'
+                            : manga.status === 'completed'
+                              ? 'Completed'
+                              : manga.status}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           {manga.contentRating.toUpperCase()}
@@ -298,11 +365,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-orange-500 mb-2">10,000+</div>
+              <div className="text-3xl font-bold text-orange-500 mb-2">
+                10,000+
+              </div>
               <div className="text-gray-300">Manga Titles</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-orange-500 mb-2">500K+</div>
+              <div className="text-3xl font-bold text-orange-500 mb-2">
+                500K+
+              </div>
               <div className="text-gray-300">Chapters</div>
             </div>
             <div>
@@ -310,7 +381,9 @@ export default function Home() {
               <div className="text-gray-300">Users</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-orange-500 mb-2">1000+</div>
+              <div className="text-3xl font-bold text-orange-500 mb-2">
+                1000+
+              </div>
               <div className="text-gray-300">Scan Groups</div>
             </div>
           </div>
@@ -327,34 +400,119 @@ export default function Home() {
                 <span className="text-lg font-bold">MangaDex</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Read comics and manga online with high quality images and support creators and translators.
+                Read comics and manga online with high quality images and
+                support creators and translators.
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Browse</h3>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="/titles" className="hover:text-orange-500 transition-colors">Titles</Link></li>
-                <li><Link href="/updates" className="hover:text-orange-500 transition-colors">Updates</Link></li>
-                <li><Link href="/groups" className="hover:text-orange-500 transition-colors">Groups</Link></li>
-                <li><Link href="/lists" className="hover:text-orange-500 transition-colors">Lists</Link></li>
+                <li>
+                  <Link
+                    href="/titles"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Titles
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/updates"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Updates
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/groups"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Groups
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/lists"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Lists
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Community</h3>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="/forums" className="hover:text-orange-500 transition-colors">Forums</Link></li>
-                <li><Link href="/discord" className="hover:text-orange-500 transition-colors">Discord</Link></li>
-                <li><Link href="/reddit" className="hover:text-orange-500 transition-colors">Reddit</Link></li>
-                <li><Link href="/twitter" className="hover:text-orange-500 transition-colors">Twitter</Link></li>
+                <li>
+                  <Link
+                    href="/forums"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Forums
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/discord"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Discord
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/reddit"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Reddit
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/twitter"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Twitter
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="/help" className="hover:text-orange-500 transition-colors">Help Center</Link></li>
-                <li><Link href="/rules" className="hover:text-orange-500 transition-colors">Rules</Link></li>
-                <li><Link href="/api" className="hover:text-orange-500 transition-colors">API</Link></li>
-                <li><Link href="/contact" className="hover:text-orange-500 transition-colors">Contact</Link></li>
+                <li>
+                  <Link
+                    href="/help"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Help Center
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/rules"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Rules
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/api"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    API
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    className="hover:text-orange-500 transition-colors"
+                  >
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
