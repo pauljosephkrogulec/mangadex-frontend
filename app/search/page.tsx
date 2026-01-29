@@ -1,10 +1,25 @@
 'use client';
 
-import { Search, Menu, Filter } from 'lucide-react';
+import { Search, Menu, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import UserAuth from '../components/UserAuth';
 import Sidebar from '../components/Sidebar';
 import MangaCard from '../components/MangaCard';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+
+interface PaginatedResponse<T> {
+  member: T[];
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  totalPages: number;
+  view: {
+    first?: string;
+    last?: string;
+    next?: string;
+    prev?: string;
+  };
+}
 
 interface Manga {
   id: string;
@@ -37,6 +52,9 @@ interface Tag {
 }
 
 export default function TitlePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [mangaList, setMangaList] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -46,14 +64,163 @@ export default function TitlePage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [showTagFilter, setShowTagFilter] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(24); // Frontend default
+  const [paginationLoading, setPaginationLoading] = useState(false);
+
+  // Initialize state from URL parameters
+  useEffect(() => {
+    const page = searchParams.get('page');
+    const search = searchParams.get('search');
+    const filter = searchParams.get('filter');
+    const tags = searchParams.get('tags');
+    const perPage = searchParams.get('itemsPerPage');
+    
+    if (page) setCurrentPage(parseInt(page));
+    if (search) setSearchTerm(search);
+    if (filter) setSelectedFilter(filter);
+    if (tags) setSelectedTags(tags.split(','));
+    if (perPage) setItemsPerPage(parseInt(perPage));
+  }, [searchParams]);
+
+  // Update URL when state changes
+  const updateURL = (updates: Record<string, any>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '' || value === 'all') {
+        params.delete(key);
+      } else if (Array.isArray(value)) {
+        if (value.length > 0) {
+          params.set(key, value.join(','));
+        } else {
+          params.delete(key);
+        }
+      } else {
+        params.set(key, value.toString());
+      }
+    });
+    
+    const newURL = `/search${params.toString() ? '?' + params.toString() : ''}`;
+    router.push(newURL, { scroll: false });
+  };
+
+  const fetchManga = async (page: number, reset: boolean = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
+    
+    try {
+      const queryParams = new URLSearchParams({
+        state: 'published',
+        page: page.toString(),
+        itemsPerPage: itemsPerPage.toString(),
+        'order[updatedAt]': 'desc',
+        groups: 'manga:read:collection'
+      });
+      
+      // Add search filter
+      if (searchTerm) {
+        queryParams.set('title', searchTerm);
+      }
+      
+      // Add status/content rating filter
+      if (selectedFilter === 'ongoing') {
+        queryParams.set('status', 'ongoing');
+      } else if (selectedFilter === 'completed') {
+        queryParams.set('status', 'completed');
+      } else if (selectedFilter === 'safe') {
+        queryParams.set('contentRating', 'safe');
+      }
+      
+      // Add tag filters
+      selectedTags.forEach(tagId => {
+        queryParams.append('tags.id', tagId);
+      });
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas?${queryParams.toString()}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const mangaRaw = data['member'] || data['hydra:member'] || [];
+        
+        // Process manga data
+        const mangaWithCoverArts = mangaRaw.map((manga: Manga) => {
+          const mangaWithCovers = { ...manga } as Manga;
+          if (manga.coverArts && manga.coverArts.length > 0) {
+            mangaWithCovers.coverArts = [
+              {
+                id: manga.coverArts[0].id,
+                fileName:
+                  'https://mangadex.org/covers/' + manga.mainCoverArtFilename,
+                manga: manga.id,
+              },
+            ];
+          }
+          mangaWithCovers.tags = manga.tags || [];
+          mangaWithCovers.followed = false;
+          return mangaWithCovers;
+        });
+        
+        setMangaList(mangaWithCoverArts);
+        
+        // Set pagination info from API response
+        // API Platform returns pagination info in 'view' 
+        const view = data['view'] || {};
+        
+        // Extract pagination info from view
+        let currentPageCount = page;
+        let totalPagesCount = 1;
+        let totalItemsCount = mangaRaw.length;
+        
+        // Parse current page from view @id
+        if (view['@id']) {
+          const urlParams = new URLSearchParams(view['@id'].split('?')[1] || '');
+          currentPageCount = parseInt(urlParams.get('page') as string) || page;
+        }
+        
+        // Calculate total pages from last page link
+        if (view['last']) {
+          const lastPageUrl = view['last'];
+          const urlParams = new URLSearchParams(lastPageUrl.split('?')[1] || '');
+          totalPagesCount = parseInt(urlParams.get('page') as string) || 1;
+          totalItemsCount = data['totalItems'];
+        }
+        
+        setTotalItems(totalItemsCount);
+        setTotalPages(totalPagesCount);
+        setCurrentPage(currentPageCount);
+        
+        console.log('Pagination info:', {
+          totalItems: totalItemsCount,
+          currentPage: currentPageCount,
+          totalPages: totalPagesCount,
+          itemsPerPage: itemsPerPage,
+          responseLength: mangaRaw.length,
+          view: view
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch manga:', error);
+    } finally {
+      setLoading(false);
+      setPaginationLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch manga data
-        const mangaResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas?state=published&itemsPerPage=50&order[updatedAt]=desc&groups=manga:read:collection`
-        );
+        // Fetch manga data with pagination
+        await fetchManga(currentPage, true);
 
         // Fetch all tags data (handle pagination)
         let allTags: Tag[] = [];
@@ -78,33 +245,7 @@ export default function TitlePage() {
           }
         }
 
-        if (mangaResponse.ok) {
-          const mangaData = await mangaResponse.json();
-          const mangaRaw = mangaData['member'] || [];
-
-          // Process manga data
-          const mangaWithCoverArts = mangaRaw.map((manga: Manga) => {
-            const mangaWithCovers = { ...manga } as Manga;
-            if (manga.coverArts && manga.coverArts.length > 0) {
-              mangaWithCovers.coverArts = [
-                {
-                  id: manga.coverArts[0].id,
-                  fileName:
-                    'https://mangadex.org/covers/' + manga.mainCoverArtFilename,
-                  manga: manga.id,
-                },
-              ];
-            }
-            // Ensure tags are included - they might be in different format
-            mangaWithCovers.tags = manga.tags || [];
-            // Initialize followed status
-            mangaWithCovers.followed = false;
-            return mangaWithCovers;
-          });
-
-          setMangaList(mangaWithCoverArts);
-          setAvailableTags(allTags);
-        }
+        setAvailableTags(allTags);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -114,6 +255,29 @@ export default function TitlePage() {
 
     fetchData();
   }, []);
+
+  // Refetch manga when search parameters change
+  useEffect(() => {
+    if (!loading) {
+      fetchManga(1, true);
+      updateURL({
+        page: 1,
+        search: searchTerm,
+        filter: selectedFilter,
+        tags: selectedTags,
+        itemsPerPage: itemsPerPage
+      });
+    }
+  }, [searchTerm, selectedFilter, selectedTags, itemsPerPage]);
+
+  // Handle page changes
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && !paginationLoading) {
+      fetchManga(newPage, false);
+      setCurrentPage(newPage);
+      updateURL({ page: newPage });
+    }
+  };
 
   const getDisplayTitle = (title: { [key: string]: string }) => {
     return title['en'] || title['ja'] || Object.values(title)[0] || 'Untitled';
@@ -128,40 +292,7 @@ export default function TitlePage() {
     );
   };
 
-  const filteredManga = mangaList.filter((manga) => {
-    const title = getDisplayTitle(manga.title).toLowerCase();
-    const matchesSearch = title.includes(searchTerm.toLowerCase());
-
-    // Filter by status/content rating
-    let matchesFilter = true;
-    if (selectedFilter === 'ongoing')
-      matchesFilter = manga.status === 'ongoing';
-    else if (selectedFilter === 'completed')
-      matchesFilter = manga.status === 'completed';
-    else if (selectedFilter === 'safe')
-      matchesFilter = manga.contentRating === 'safe';
-
-    // Filter by tags
-    let matchesTags = true;
-    if (selectedTags.length > 0) {
-      if (!manga.tags || manga.tags.length === 0) {
-        matchesTags = false;
-      } else {
-        // Handle different tag formats
-        const mangaTagIds = manga.tags.map((tag: any) => {
-          if (typeof tag === 'string') return tag;
-          if (typeof tag === 'object' && tag.id) return tag.id;
-          return String(tag);
-        });
-        matchesTags = selectedTags.every((tagId) =>
-          mangaTagIds.includes(tagId)
-        );
-      }
-    }
-
-    return matchesSearch && matchesFilter && matchesTags;
-  });
-
+  
   return (
     <div className="min-h-screen bg-gray-900 flex">
       {/* Sidebar */}
@@ -190,6 +321,17 @@ export default function TitlePage() {
                     placeholder="Search titles..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateURL({
+                          page: 1,
+                          search: searchTerm,
+                          filter: selectedFilter,
+                          tags: selectedTags,
+                          itemsPerPage: itemsPerPage
+                        });
+                      }
+                    }}
                     className="w-96 pl-10 pr-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
@@ -219,8 +361,8 @@ export default function TitlePage() {
               <div>
                 <h1 className="text-3xl font-bold text-white">Browse Titles</h1>
                 <p className="text-gray-400 mt-1">
-                  {filteredManga.length}{' '}
-                  {filteredManga.length === 1 ? 'title' : 'titles'} available
+                  {totalItems}{' '}
+                  {totalItems === 1 ? 'title' : 'titles'} available
                 </p>
               </div>
 
@@ -236,6 +378,17 @@ export default function TitlePage() {
                   <option value="ongoing">Ongoing</option>
                   <option value="completed">Completed</option>
                   <option value="safe">Safe Only</option>
+                </select>
+
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                  className="bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value={12}>12 per page</option>
+                  <option value={24}>24 per page</option>
+                  <option value={48}>48 per page</option>
+                  <option value={96}>96 per page</option>
                 </select>
 
                 <button
@@ -369,12 +522,75 @@ export default function TitlePage() {
                 </div>
               ))}
             </div>
-          ) : filteredManga.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-              {filteredManga.map((manga) => (
-                <MangaCard key={manga.id} manga={manga} />
-              ))}
-            </div>
+          ) : mangaList.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                {mangaList.map((manga) => (
+                  <MangaCard key={manga.id} manga={manga} />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center">
+                  <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-2">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1 || paginationLoading}
+                      className="p-2 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-gray-300" />
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            disabled={paginationLoading}
+                            className={`px-3 py-1 rounded transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-orange-600 text-white'
+                                : 'hover:bg-gray-700 text-gray-300'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages || paginationLoading}
+                      className="p-2 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="h-5 w-5 text-gray-300" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Page Info */}
+              <div className="mt-4 text-center text-gray-400 text-sm">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} titles
+              </div>
+            </>
           ) : (
             <div className="text-center py-16">
               <Search className="h-16 w-16 text-gray-600 mx-auto mb-4" />

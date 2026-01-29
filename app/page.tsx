@@ -141,7 +141,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href="/titles"
+                  href="/search"
                   className="bg-white text-orange-500 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
                 >
                   Start Reading
@@ -164,7 +164,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold text-white">Featured Manga</h2>
               <Link
-                href="/titles"
+                href="/search"
                 className="text-orange-400 hover:text-orange-300 font-medium"
               >
                 View All →
@@ -299,10 +299,10 @@ export default function Home() {
                 <ul className="space-y-2 text-gray-400 text-sm">
                   <li>
                     <Link
-                      href="/titles"
+                      href="/search"
                       className="hover:text-orange-500 transition-colors"
                     >
-                      Titles
+                      Search
                     </Link>
                   </li>
                   <li>
