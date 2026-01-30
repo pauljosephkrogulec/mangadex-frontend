@@ -6,50 +6,8 @@ import Sidebar from '../components/Sidebar';
 import MangaCard from '../components/MangaCard';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { PaginatedResponse, Manga, CoverArt, Tag } from '../types';
 
-interface PaginatedResponse<T> {
-  member: T[];
-  totalItems: number;
-  itemsPerPage: number;
-  currentPage: number;
-  totalPages: number;
-  view: {
-    first?: string;
-    last?: string;
-    next?: string;
-    prev?: string;
-  };
-}
-
-interface Manga {
-  id: string;
-  title: { [key: string]: string };
-  description: { [key: string]: string };
-  status: string;
-  year?: number;
-  contentRating: string;
-  createdAt: string;
-  updatedAt: string;
-  coverArts?: CoverArt[];
-  lastChapter?: string;
-  mainCoverArtFilename?: string;
-  tags?: Tag[];
-  followed?: boolean;
-}
-
-interface CoverArt {
-  id: string;
-  fileName: string;
-  manga: string;
-  volume?: string;
-}
-
-interface Tag {
-  id: string;
-  name: { [key: string]: string };
-  tagGroup: string;
-  description: { [key: string]: string };
-}
 
 export default function TitlePage() {
   const searchParams = useSearchParams();

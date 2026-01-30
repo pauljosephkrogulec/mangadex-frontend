@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  BookOpen, 
-  Calendar, 
-  Tag, 
+  BookOpen,
   ChevronLeft, 
   Heart, 
   Star,
@@ -15,63 +13,8 @@ import {
   Clock
 } from 'lucide-react';
 import UserAuth from '../../components/UserAuth';
+import { Manga, Chapter } from '../../types';
 
-interface Manga {
-  id: string;
-  title: { [key: string]: string };
-  description: { [key: string]: string };
-  status: string;
-  year?: number;
-  contentRating: string;
-  createdAt: string;
-  updatedAt: string;
-  coverArts?: CoverArt[];
-  lastChapter?: string;
-  mainCoverArtFilename?: string;
-  tags?: Tag[];
-  authors?: Author[];
-  artists?: Author[];
-  followed?: boolean;
-  rating?: {
-    average: number;
-    count: number;
-  };
-  statistics?: {
-    follows: number;
-    views: number;
-  };
-  availableTranslatedLanguages?: string[];
-}
-
-interface CoverArt {
-  id: string;
-  fileName: string;
-  manga: string;
-  volume?: string;
-}
-
-interface Tag {
-  id: string;
-  name: { [key: string]: string };
-  tagGroup: string;
-}
-
-interface Author {
-  id: string;
-  name: string | { [key: string]: string };
-  role: string;
-}
-
-interface Chapter {
-  id: string;
-  chapter: string;
-  title?: string;
-  volume?: string;
-  pages: number;
-  publishAt: string;
-  translatedLanguage: string;
-  scanlator?: string;
-}
 
 export default function MangaPage() {
   const params = useParams();
@@ -381,7 +324,7 @@ export default function MangaPage() {
                   {chapters.map((chapter) => (
                     <Link
                       key={chapter.id}
-                      href={`/manga/${id}/chapter/${chapter.id}`}
+                      href={`/chapter/${chapter.id}`}
                       className="block p-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       <div className="flex items-center justify-between">

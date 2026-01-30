@@ -6,28 +6,8 @@ import UserAuth from './components/UserAuth';
 import Sidebar from './components/Sidebar';
 import MangaCard from './components/MangaCard';
 import { useState, useEffect } from 'react';
+import { Manga, CoverArt } from './types';
 
-interface Manga {
-  id: string;
-  title: { [key: string]: string };
-  description: { [key: string]: string };
-  status: string;
-  year?: number;
-  contentRating: string;
-  createdAt: string;
-  updatedAt: string;
-  coverArts?: CoverArt[];
-  lastChapter?: string;
-  mainCoverArtFilename?: string;
-  followed?: boolean;
-}
-
-interface CoverArt {
-  id: string;
-  fileName: string;
-  manga: string;
-  volume?: string;
-}
 
 export default function Home() {
   const [featuredManga, setFeaturedManga] = useState<Manga[]>([]);

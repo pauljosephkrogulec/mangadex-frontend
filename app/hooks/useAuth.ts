@@ -1,13 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { User } from '../types';
 
-interface User {
-  id: string;
-  name: string;
-  email?: string;
-  roles?: string[];
-}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);

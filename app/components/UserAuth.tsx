@@ -3,16 +3,11 @@
 import Link from 'next/link';
 import { User, Settings, LogOut } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { User as UserType } from '../types';
 
-interface User {
-  id: string;
-  name: string;
-  email?: string;
-  roles?: string[];
-}
 
 export default function UserAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {

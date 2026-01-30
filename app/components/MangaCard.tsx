@@ -2,32 +2,8 @@
 
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
+import { Manga, CoverArt, MangaCardProps } from '../types';
 
-interface Manga {
-  id: string;
-  title: { [key: string]: string };
-  description: { [key: string]: string };
-  status: string;
-  year?: number;
-  contentRating: string;
-  createdAt: string;
-  updatedAt: string;
-  coverArts?: CoverArt[];
-  lastChapter?: string;
-  mainCoverArtFilename?: string;
-}
-
-interface CoverArt {
-  id: string;
-  fileName: string;
-  manga: string;
-  volume?: string;
-}
-
-interface MangaCardProps {
-  manga: Manga;
-  className?: string;
-}
 
 export default function MangaCard({ manga, className = '' }: MangaCardProps) {
   const getDisplayTitle = (title: { [key: string]: string }) => {

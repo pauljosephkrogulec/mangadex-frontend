@@ -19,13 +19,8 @@ import {
   HelpCircle,
   Info,
 } from 'lucide-react';
+import { SidebarProps } from '../types';
 
-interface SidebarProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-  onToggle?: () => void;
-  isCollapsed?: boolean;
-}
 
 export default function Sidebar({
   isOpen = false,
