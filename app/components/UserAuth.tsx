@@ -5,16 +5,19 @@ import { User, Settings, LogOut } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { User as UserType } from '../types';
 
-
 export default function UserAuth() {
   const [user, setUser] = useState<UserType | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
+    // Initialize user state from localStorage only on client side
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        // Use setTimeout to avoid calling setState synchronously in effect
+        setTimeout(() => {
+          setUser(JSON.parse(storedUser));
+        }, 0);
       } catch {
         localStorage.removeItem('user');
       }

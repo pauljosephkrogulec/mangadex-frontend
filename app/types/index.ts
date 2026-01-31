@@ -37,7 +37,7 @@ export interface Manga {
 }
 
 export interface CoverArt {
-  id: string;
+  id?: string;
   fileName: string;
   manga: string;
   volume?: string;

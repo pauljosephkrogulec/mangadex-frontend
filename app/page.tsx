@@ -6,8 +6,7 @@ import UserAuth from './components/UserAuth';
 import Sidebar from './components/Sidebar';
 import MangaCard from './components/MangaCard';
 import { useState, useEffect } from 'react';
-import { Manga, CoverArt } from './types';
-
+import { Manga } from './types';
 
 export default function Home() {
   const [featuredManga, setFeaturedManga] = useState<Manga[]>([]);
@@ -28,14 +27,13 @@ export default function Home() {
           const mangaList = data['member'] || [];
 
           // Add placeholder cover art URLs to manga
-          const mangaWithCoverArts = mangaList.map((manga: any) => {
+          const mangaWithCoverArts = mangaList.map((manga: Manga) => {
             const mangaWithCovers = { ...manga } as Manga;
             if (manga.coverArts && manga.coverArts.length > 0) {
               // Use placeholder image with manga ID as seed
 
               mangaWithCovers.coverArts = [
                 {
-                  id: manga.coverArts[0],
                   fileName:
                     'https://mangadex.org/covers/' + manga.mainCoverArtFilename,
                   manga: manga.id,

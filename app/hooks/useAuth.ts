@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '../types';
 
-
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);

@@ -1,24 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  ChevronLeft, 
+import Image from 'next/image';
+import {
+  ChevronLeft,
   ChevronRight,
   BookOpen,
   Calendar,
-  User
+  User,
 } from 'lucide-react';
 import UserAuth from '../../components/UserAuth';
 import { Chapter } from '../../types';
 
-
 export default function ChapterPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
-  
+
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [pages, setPages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -31,7 +30,9 @@ export default function ChapterPage() {
         setLoading(true);
 
         // Fetch chapter details
-        const chapterResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters/${id}`);
+        const chapterResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters/${id}`
+        );
         if (!chapterResponse.ok) {
           throw new Error('Failed to fetch chapter details');
         }
@@ -39,7 +40,9 @@ export default function ChapterPage() {
         setChapter(chapterData);
 
         // Fetch chapter pages
-        const pagesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters/${id}`);
+        const pagesResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters/${id}`
+        );
         if (pagesResponse.ok) {
           const pagesData = await pagesResponse.json();
           setPages(pagesData.pagesData || []);
@@ -61,27 +64,30 @@ export default function ChapterPage() {
     return title['en'] || title['ja'] || Object.values(title)[0] || 'Untitled';
   };
 
-  const goToNextPage = () => {
+  const goToNextPage = useCallback(() => {
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
     }
-  };
+  }, [currentPage, pages.length]);
 
-  const goToPreviousPage = () => {
+  const goToPreviousPage = useCallback(() => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
     }
-  };
+  }, [currentPage]);
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') goToNextPage();
-    if (e.key === 'ArrowLeft') goToPreviousPage();
-  };
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goToNextPage();
+      if (e.key === 'ArrowLeft') goToPreviousPage();
+    },
+    [goToNextPage, goToPreviousPage]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage]);
+  }, [handleKeyDown]);
 
   if (loading) {
     return (
@@ -103,7 +109,7 @@ export default function ChapterPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Error</h1>
             <p className="text-gray-400 mb-4">{error || 'Chapter not found'}</p>
-            <Link 
+            <Link
               href="/search"
               className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300"
             >
@@ -115,7 +121,7 @@ export default function ChapterPage() {
       </div>
     );
   }
-  console.log(chapter.manga)
+  console.log(chapter.manga);
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 border-b border-gray-700">
@@ -123,7 +129,7 @@ export default function ChapterPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {chapter.manga && (
-                <Link 
+                <Link
                   href={`/manga/${chapter.manga.id}`}
                   className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300"
                 >
@@ -133,7 +139,9 @@ export default function ChapterPage() {
               )}
               <div>
                 <h1 className="text-lg font-semibold">
-                  {chapter.manga ? getDisplayTitle(chapter.manga.title) : 'Unknown Manga'}
+                  {chapter.manga
+                    ? getDisplayTitle(chapter.manga.title)
+                    : 'Unknown Manga'}
                 </h1>
                 <p className="text-sm text-gray-400">
                   {chapter.volume && `Vol. ${chapter.volume} `}
@@ -181,11 +189,11 @@ export default function ChapterPage() {
                 <ChevronLeft className="h-4 w-4" />
                 Previous
               </button>
-              
+
               <span className="text-sm text-gray-400">
                 Page {currentPage + 1} of {pages.length}
               </span>
-              
+
               <button
                 onClick={goToNextPage}
                 disabled={currentPage === pages.length - 1}
@@ -202,13 +210,17 @@ export default function ChapterPage() {
         {pages.length > 0 ? (
           <div className="flex justify-center">
             <div className="relative max-w-4xl">
-              <img
+              <Image
                 src={pages[currentPage] || ''}
                 alt={`Page ${currentPage + 1}`}
+                width={800}
+                height={1200}
                 className="w-full h-auto rounded-lg"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  e.currentTarget.nextElementSibling?.classList.remove(
+                    'hidden'
+                  );
                 }}
               />
             </div>
@@ -232,11 +244,11 @@ export default function ChapterPage() {
                 <ChevronLeft className="h-4 w-4" />
                 Previous
               </button>
-              
+
               <span className="text-sm text-gray-400">
                 Page {currentPage + 1} of {pages.length}
               </span>
-              
+
               <button
                 onClick={goToNextPage}
                 disabled={currentPage === pages.length - 1}

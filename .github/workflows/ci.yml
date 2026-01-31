@@ -1,0 +1,141 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: mangadex-frontend/package-lock.json
+
+      - name: Change to frontend directory
+        run: cd mangadex-frontend
+
+      - name: Install dependencies
+        working-directory: ./mangadex-frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./mangadex-frontend
+        run: npm run lint
+
+      - name: Run ESLint with auto-fix check
+        working-directory: ./mangadex-frontend
+        run: npm run lint:fix
+        continue-on-error: true
+
+      - name: Check Prettier formatting
+        working-directory: ./mangadex-frontend
+        run: npm run format:check
+
+      - name: Run TypeScript compiler check
+        working-directory: ./mangadex-frontend
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: ./mangadex-frontend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results-node-${{ matrix.node-version }}
+          path: mangadex-frontend/coverage/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.node-version == '20.x'
+        with:
+          file: ./mangadex-frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: mangadex-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./mangadex-frontend
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./mangadex-frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BACKEND_URL_API: http://localhost:8080/api
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: mangadex-frontend/.next/
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: mangadex-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./mangadex-frontend
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./mangadex-frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BACKEND_URL_API: http://localhost:8080/api
+
+      - name: Run Lighthouse CI
+        working-directory: ./mangadex-frontend
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: mangadex-frontend/.lighthouseci/

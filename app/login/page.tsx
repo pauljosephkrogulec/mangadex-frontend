@@ -40,7 +40,7 @@ export default function Login() {
       localStorage.setItem('user', JSON.stringify(data.user));
       // Redirect or handle successful login
       window.location.href = '/';
-    } catch (err) {
+    } catch {
       setError('Network error');
     } finally {
       setLoading(false);
@@ -201,7 +201,7 @@ export default function Login() {
             {/* Sign Up Link */}
             <div className="text-center mt-8">
               <p className="text-white">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="/register"
                   className="text-orange-500 hover:text-orange-600 font-medium"

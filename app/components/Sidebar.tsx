@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   BookOpen,
-  Home,
   Clock,
   Users,
   List,
@@ -20,7 +19,6 @@ import {
   Info,
 } from 'lucide-react';
 import { SidebarProps } from '../types';
-
 
 export default function Sidebar({
   isOpen = false,

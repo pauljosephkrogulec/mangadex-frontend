@@ -1,26 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
+import Image from 'next/image';
+import {
   BookOpen,
-  ChevronLeft, 
-  Heart, 
+  ChevronLeft,
+  Heart,
   Star,
   Users,
   Globe,
-  Clock
+  Clock,
 } from 'lucide-react';
 import UserAuth from '../../components/UserAuth';
+import StatusBadge from '../../components/StatusBadge';
+import ContentRatingBadge from '../../components/ContentRatingBadge';
+import Tag from '../../components/Tag';
+import LanguageBadge from '../../components/LanguageBadge';
 import { Manga, Chapter } from '../../types';
-
 
 export default function MangaPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
-  
+
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
@@ -32,17 +35,20 @@ export default function MangaPage() {
         setLoading(true);
 
         // Fetch manga details
-        const mangaResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas/${id}`);
+        const mangaResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/mangas/${id}`
+        );
         if (!mangaResponse.ok) {
           throw new Error('Failed to fetch manga details');
         }
         const mangaData = await mangaResponse.json();
         setManga(mangaData);
         // Fetch chapters
-        const chaptersUrl = selectedLanguage === 'all' 
-          ? `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters?manga.id=${id}`
-          : `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters?manga.id=${id}&translatedLanguage=${selectedLanguage}`;
-        
+        const chaptersUrl =
+          selectedLanguage === 'all'
+            ? `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters?manga.id=${id}`
+            : `${process.env.NEXT_PUBLIC_BACKEND_URL_API}/chapters?manga.id=${id}&translatedLanguage=${selectedLanguage}`;
+
         const chaptersResponse = await fetch(chaptersUrl);
         if (chaptersResponse.ok) {
           const chaptersData = await chaptersResponse.json();
@@ -65,48 +71,28 @@ export default function MangaPage() {
     return title['en'] || title['ja'] || Object.values(title)[0] || 'Untitled';
   };
 
-  const getDisplayDescription = (description: { [key: string]: string } | undefined) => {
-    if (!description || typeof description !== 'object') return 'No description available';
-    return description['en'] || description['ja'] || Object.values(description)[0] || 'No description available';
+  const getDisplayDescription = (
+    description: { [key: string]: string } | undefined
+  ) => {
+    if (!description || typeof description !== 'object')
+      return 'No description available';
+    return (
+      description['en'] ||
+      description['ja'] ||
+      Object.values(description)[0] ||
+      'No description available'
+    );
   };
 
-  const getAuthorName = (name: string | { [key: string]: string } | undefined) => {
+  const getAuthorName = (
+    name: string | { [key: string]: string } | undefined
+  ) => {
     if (!name) return 'Unknown';
     if (typeof name === 'string') return name;
     if (typeof name === 'object') {
       return name['en'] || name['ja'] || Object.values(name)[0] || 'Unknown';
     }
     return 'Unknown';
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ongoing':
-        return 'bg-blue-500';
-      case 'completed':
-        return 'bg-gray-600';
-      case 'hiatus':
-        return 'bg-yellow-500';
-      case 'cancelled':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getContentRatingColor = (rating: string) => {
-    switch (rating) {
-      case 'safe':
-        return 'bg-green-500';
-      case 'suggestive':
-        return 'bg-yellow-500';
-      case 'erotica':
-        return 'bg-orange-500';
-      case 'pornographic':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
   };
 
   if (loading) {
@@ -135,7 +121,7 @@ export default function MangaPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Error</h1>
             <p className="text-gray-400 mb-4">{error || 'Manga not found'}</p>
-            <Link 
+            <Link
               href="/search"
               className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300"
             >
@@ -147,13 +133,13 @@ export default function MangaPage() {
       </div>
     );
   }
-  console.log(chapters)
+  console.log(chapters);
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link 
+            <Link
               href="/search"
               className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300"
             >
@@ -173,13 +159,20 @@ export default function MangaPage() {
               <div className="relative overflow-hidden rounded-lg mb-4">
                 <div className="aspect-[3/4] bg-gradient-to-br from-gray-600 to-gray-700">
                   {manga.coverArts && manga.coverArts.length > 0 ? (
-                    <img
-                      src={'https://mangadex.org/covers/' + manga.mainCoverArtFilename}
+                    <Image
+                      src={
+                        'https://mangadex.org/covers/' +
+                        manga.mainCoverArtFilename
+                      }
                       alt={getDisplayTitle(manga.title)}
+                      width={256}
+                      height={341}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          'hidden'
+                        );
                       }}
                     />
                   ) : (
@@ -222,14 +215,12 @@ export default function MangaPage() {
           <div className="flex-1">
             {/* Title and Badges */}
             <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-2">{getDisplayTitle(manga.title)}</h1>
+              <h1 className="text-3xl font-bold mb-2">
+                {getDisplayTitle(manga.title)}
+              </h1>
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getStatusColor(manga.status)}`}>
-                  {manga.status.toUpperCase()}
-                </span>
-                <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getContentRatingColor(manga.contentRating)}`}>
-                  {manga.contentRating.toUpperCase()}
-                </span>
+                <StatusBadge status={manga.status} />
+                <ContentRatingBadge rating={manga.contentRating} />
                 {manga.year && (
                   <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-700 text-white">
                     {manga.year}
@@ -242,9 +233,13 @@ export default function MangaPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <div className="flex items-center gap-1">
                     <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                    <span className="font-medium">{manga.rating.average.toFixed(2)}</span>
+                    <span className="font-medium">
+                      {manga.rating.average.toFixed(2)}
+                    </span>
                   </div>
-                  <span className="text-gray-400">({manga.rating.count.toLocaleString()} ratings)</span>
+                  <span className="text-gray-400">
+                    ({manga.rating.count.toLocaleString()} ratings)
+                  </span>
                 </div>
               )}
             </div>
@@ -264,17 +259,9 @@ export default function MangaPage() {
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-3">Tags</h2>
                 <div className="flex flex-wrap gap-2">
-                  {manga.tags.map((tag) => {
-                    const tagName = tag.name.en || tag.name.ja || (tag.name ? Object.values(tag.name)[0] : 'Unknown');
-                    return (
-                      <span
-                        key={tag.id}
-                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-sm transition-colors"
-                      >
-                        {tagName}
-                      </span>
-                    );
-                  })}
+                  {manga.tags.map((tag) => (
+                    <Tag key={tag.id} tag={tag} />
+                  ))}
                 </div>
               </div>
             )}
@@ -282,17 +269,23 @@ export default function MangaPage() {
             {/* Authors/Artists */}
             {(manga.authors?.length || manga.artists?.length) && (
               <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-3">Authors & Artists</h2>
+                <h2 className="text-xl font-semibold mb-3">
+                  Authors & Artists
+                </h2>
                 <div className="space-y-2">
                   {manga.authors?.map((author) => (
                     <div key={author.id} className="text-gray-300">
-                      <span className="font-medium">{getAuthorName(author.name)}</span>
+                      <span className="font-medium">
+                        {getAuthorName(author.name)}
+                      </span>
                       <span className="text-gray-500 ml-2">(Author)</span>
                     </div>
                   ))}
                   {manga.artists?.map((artist) => (
                     <div key={artist.id} className="text-gray-300">
-                      <span className="font-medium">{getAuthorName(artist.name)}</span>
+                      <span className="font-medium">
+                        {getAuthorName(artist.name)}
+                      </span>
                       <span className="text-gray-500 ml-2">(Artist)</span>
                     </div>
                   ))}
@@ -304,20 +297,23 @@ export default function MangaPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold">Chapters</h2>
-                {manga.availableTranslatedLanguages && manga.availableTranslatedLanguages.length > 0 && (
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="bg-gray-700 text-white px-3 py-1 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="all">All Languages</option>
-                    {manga.availableTranslatedLanguages.map((lang: string) => (
-                      <option key={lang} value={lang}>
-                        {lang.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                {manga.availableTranslatedLanguages &&
+                  manga.availableTranslatedLanguages.length > 0 && (
+                    <select
+                      value={selectedLanguage}
+                      onChange={(e) => setSelectedLanguage(e.target.value)}
+                      className="bg-gray-700 text-white px-3 py-1 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="all">All Languages</option>
+                      {manga.availableTranslatedLanguages.map(
+                        (lang: string) => (
+                          <option key={lang} value={lang}>
+                            {lang.toUpperCase()}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  )}
               </div>
               {chapters.length > 0 ? (
                 <div className="space-y-2">
@@ -336,8 +332,10 @@ export default function MangaPage() {
                           <div className="text-sm text-gray-400 mt-1">
                             {chapter.pages} pages
                             {chapter.scanlator && ` • ${chapter.scanlator}`}
-                            <span className="ml-2 px-2 py-1 bg-gray-600 rounded text-xs">
-                              {chapter.translatedLanguage?.toUpperCase()}
+                            <span className="ml-2">
+                              <LanguageBadge
+                                language={chapter.translatedLanguage}
+                              />
                             </span>
                           </div>
                         </div>
